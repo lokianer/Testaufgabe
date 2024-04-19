@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.leafletmap-container {
+    padding-left: 5%;
+    padding-top: 1%;
+}
+
+.leafletmap {
+    height: 95vh;
+    width: 95%;
+}
