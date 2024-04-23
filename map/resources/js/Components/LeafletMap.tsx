@@ -1,10 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import customCrs from "@/scripts/CustomCrs";
 import { SateliteStyle, AtlasStyle, GridStyle } from "@/scripts/mapStyles";
+import axios from "axios";
 
-const LeafletMap = () => {
+interface MapData {
+    color: string;
+    lat: number;
+    lng: number;
+}
+
+const LeafletMap: React.FC = () => {
     useEffect(() => {
         let mymap = L.map("map", {
             crs: customCrs,
@@ -25,48 +32,43 @@ const LeafletMap = () => {
             .addTo(mymap);
 
         let currentMarkers: L.Circle[] = [];
+        let intervalId: NodeJS.Timeout;
 
-        const generateMarkers = () => {
+        const generateMarkers = (mapData: MapData[]) => {
             currentMarkers.forEach((marker) => marker.removeFrom(mymap));
             currentMarkers = [];
 
-            for (let i = 1; i <= 300; i++) {
-                const randomColor =
-                    "#" + Math.floor(Math.random() * 16777215).toString(16);
-                const randomLat = Math.random() * 180 - 90;
-                const randomLng = Math.random() * 360 - 180;
+            mapData.forEach((dataPoint) => {
+                const { color, lat, lng } = dataPoint;
 
-                const adjustedLat = randomLat + (Math.random() - 0.3) * 10000;
-                const adjustedLng = randomLng + (Math.random() - 0.5) * 5500;
-
-                const latlng = L.latLng(adjustedLat, adjustedLng);
-                const layerPoint = mymap.latLngToLayerPoint(latlng);
-                const leafletLatLng = mymap.layerPointToLatLng(layerPoint);
-
-                const marker = L.circle(
-                    [leafletLatLng.lat, leafletLatLng.lng],
-                    {
-                        color: randomColor,
-                        fillColor: randomColor,
-                        fillOpacity: 0.5,
-                        radius: 10,
-                    }
-                ).addTo(mymap);
+                const marker = L.circle([lat, lng], {
+                    color,
+                    fillColor: color,
+                    fillOpacity: 0.5,
+                    radius: 10,
+                }).addTo(mymap);
                 marker.bindTooltip(
-                    `Latitude: ${leafletLatLng.lat.toFixed(
-                        2
-                    )}, Longitude: ${leafletLatLng.lng.toFixed(2)}`
+                    `Latitude: ${lat.toFixed(2)}, Longitude: ${lng.toFixed(2)}`
                 );
 
                 currentMarkers.push(marker);
+            });
+        };
+
+        const fetchData = async () => {
+            try {
+                const response = await axios.get("http://127.0.0.1:8000/redis");
+                const mapData = response.data.data;
+                generateMarkers(mapData);
+                console.log("Data fetched", mapData);
+            } catch (error) {
+                console.error("Error fetching map data:", error);
             }
         };
 
-        generateMarkers();
+        fetchData();
 
-        const intervalId = setInterval(() => {
-            generateMarkers();
-        }, 25000);
+        intervalId = setInterval(fetchData, 5000);
 
         return () => {
             clearInterval(intervalId);

@@ -123,4 +123,9 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'aliases' => [
+        'Redis' => Illuminate\Support\Facades\Redis::class,
+    ],
+    
+
 ];
